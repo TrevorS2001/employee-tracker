@@ -1,4 +1,3 @@
-
 {
   "name": "12-mysql-employee-tracker",
   "version": "1.0.0",
@@ -21,8 +20,8 @@
   "homepage": "https://github.com/EdenKhaos/12-mysql-employee-tracker#readme",
   "dependencies": {
     "console.table": "^0.10.0",
-  "inquirer": "^8.2.4",
-  "mysql2": "^2.3.3"
-  },
-  "devDependencies": {}
+    "dotenv": "^16.0.1",
+    "inquirer": "^8.2.4",
+    "mysql2": "^2.3.3"
+  }
 }

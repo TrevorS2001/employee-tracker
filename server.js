@@ -2,16 +2,17 @@
 const mysql = require("mysql2");
 const inquirer = require("inquirer");
 require("console.table");
+require("dotenv").config();
 
 const connection = mysql.createConnection({
     host: '127.0.0.1',
 
     port: 3306,
 
-    user: 'root',
+    user: process.env.DB_USER,
 
-    password: 'PlacePassWordHere',
-    database: 'employeesDB'
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 connection.connect(function (err) {
@@ -46,7 +47,7 @@ function promptOne() {
           break;
 
         case "Update Employee Role":
-          updateEmployeeRole();
+          updateEmployee();
           break;
 
         case "Add Role":
@@ -98,6 +99,11 @@ function addEmployee() {
   });
 }
 
+function updateEmployee() { 
+  employeeArray();
+
+}
+
 function promptInsert(roleChoice) {
 
   inquirer
@@ -138,10 +144,22 @@ function promptInsert(roleChoice) {
     });
 }
 
-//"Update Employee Role" / UPDATE,
-function updateEmployeeRole() { 
-  employeeArray();
+function roleArray(eChoice) {
 
+  var query =
+    `SELECT r.id, r.title, r.salary 
+  FROM role r`
+  let roleChoice;
+
+  connection.query(query, function (err, res) {
+    if (err) throw err;
+
+    roleChoice = res.map(({ id, title, salary }) => ({
+      value: id, title: `${title}`, salary: `${salary}`      
+    }));
+
+    promptEmployeeRole(eChoice, roleChoice);
+  });
 }
 
 function employeeArray() {
@@ -159,29 +177,106 @@ function employeeArray() {
   connection.query(query, function (err, res) {
     if (err) throw err;
 
-    const employeeChoices = res.map(({ id, first_name, last_name }) => ({
+    const eChoice = res.map(({ id, first_name, last_name }) => ({
       value: id, name: `${first_name} ${last_name}`      
     }));
 
-    roleArray(employeeChoices);
+    roleArray(eChoice);
   });
 }
 
-function roleArray(employeeChoices) {
+function promptEmployeeRole(eChoice, roleChoice) {
+
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "employeeId",
+        message: "Set an employee to a role4?",
+        choices: eChoice
+      },
+      {
+        type: "list",
+        name: "roleId",
+        message: "Update a role?",
+        choices: roleChoice
+      },
+    ])
+    .then(function (response) {
+
+      var query = `UPDATE employee SET role_id = ? WHERE id = ?`
+      // insert a new item into the db
+      connection.query(query,
+        [ response.roleId,  
+          response.employeeId
+        ],
+        function (err, res) {
+
+          if (err) throw err;
+          promptOne();
+        });
+    });
+}
+
+
+
+// Add Role
+function addRole() {
 
   var query =
-    `SELECT r.id, r.title, r.salary 
-  FROM role r`
-  let roleChoice;
+    `SELECT d.id, d.name, r.salary AS budget
+    FROM employee e
+    JOIN role r
+    ON e.role_id = r.id
+    JOIN department d
+    ON d.id = r.department_id
+    GROUP BY d.id, d.name`
 
   connection.query(query, function (err, res) {
     if (err) throw err;
 
-    roleChoice = res.map(({ id, title, salary }) => ({
-      value: id, title: `${title}`, salary: `${salary}`      
+    const departChoice = res.map(({ id, name }) => ({
+      value: id, name: `${id} ${name}`
     }));
 
-    promptEmployeeRole(employeeChoices, roleChoice);
+    promptAddRole(departChoice);
   });
 }
 
+function promptAddRole(departChoice) {
+
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "roleTitle",
+        message: "Role title?"
+      },
+      {
+        type: "input",
+        name: "roleSalary",
+        message: "Role Salary"
+      },
+      {
+        type: "list",
+        name: "departmentId",
+        message: "Department?",
+        choices: departChoice
+      },
+    ])
+    .then(function (response) {
+
+      var query = `INSERT INTO role SET ?`
+
+      connection.query(query, {
+        title: response.title,
+        salary: response.salary,
+        department_id: response.departmentId
+      },
+        function (err, res) {
+          if (err) throw err;
+          promptOne();
+        });
+
+    });
+}

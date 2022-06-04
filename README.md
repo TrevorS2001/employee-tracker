@@ -6,9 +6,13 @@ https://drive.google.com/file/d/1XbAkn8nRrIo_5nUGwub8Yti8EfybIMhU/view
 
 # Tech Used
 inquirer
+
 mySQL
+
 console.table
+
 Javascript
+
 Node.js
 
 
